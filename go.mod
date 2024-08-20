@@ -1,4 +1,4 @@
-module github.com/rodrigomedeirosbrazil/go-erp
+module goerp
 
 go 1.22.4
 
