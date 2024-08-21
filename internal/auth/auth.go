@@ -1,6 +1,8 @@
 package auth
 
 import (
+	models "goerp/internal/auth/model"
+	database "goerp/internal/database"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -8,19 +10,24 @@ import (
 )
 
 func Login(c *fiber.Ctx) error {
-	user := c.FormValue("user")
-	pass := c.FormValue("pass")
+	emailField := c.FormValue("email")
+	passwordField := c.FormValue("password")
 
-	// Throws Unauthorized error
-	if user != "john" || pass != "doe" {
+	var user models.User
+	result := database.DB.First(&user, "email = ?", emailField)
+
+	if result.Error != nil {
+		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+
+	if user.Email != emailField || user.Password != passwordField {
 		return c.SendStatus(fiber.StatusUnauthorized)
 	}
 
 	// Create the Claims
 	claims := jwt.MapClaims{
-		"name":  "John Doe",
-		"admin": true,
-		"exp":   time.Now().Add(time.Hour * 72).Unix(),
+		"name": user.Name,
+		"exp":  time.Now().Add(time.Hour * 72).Unix(),
 	}
 
 	// Create token

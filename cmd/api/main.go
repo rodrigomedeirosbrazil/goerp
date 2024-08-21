@@ -2,6 +2,7 @@ package main
 
 import (
 	"goerp/internal/auth"
+	models "goerp/internal/database"
 
 	"github.com/gofiber/fiber/v2"
 
@@ -9,6 +10,7 @@ import (
 )
 
 func main() {
+	models.ConnectDatabase()
 	app := fiber.New()
 
 	app.Get("/", func(c *fiber.Ctx) error {
