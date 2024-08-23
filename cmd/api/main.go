@@ -23,6 +23,7 @@ func main() {
 		return c.SendString("Welcome to GOERP!")
 	})
 
+	app.Post("/signup", auth.Signup)
 	app.Post("/login", auth.Login)
 
 	jwt_key := os.Getenv("JWT_KEY")
