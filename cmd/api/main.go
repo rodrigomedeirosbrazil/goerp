@@ -1,15 +1,21 @@
 package main
 
 import (
+	"fmt"
+	"os"
+
 	"goerp/internal/auth"
 	models "goerp/internal/database"
 
 	"github.com/gofiber/fiber/v2"
 
 	jwtware "github.com/gofiber/contrib/jwt"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	godotenv.Load()
+
 	models.ConnectDatabase()
 	app := fiber.New()
 
@@ -19,10 +25,12 @@ func main() {
 
 	app.Post("/login", auth.Login)
 
-	// JWT Middleware
+	jwt_key := os.Getenv("JWT_KEY")
+
 	app.Use(jwtware.New(jwtware.Config{
-		SigningKey: jwtware.SigningKey{Key: []byte("secret")},
+		SigningKey: jwtware.SigningKey{Key: []byte(jwt_key)},
 	}))
 
-	app.Listen(":3000")
+	port := os.Getenv("APP_PORT")
+	app.Listen(fmt.Sprintf(":%s", port))
 }

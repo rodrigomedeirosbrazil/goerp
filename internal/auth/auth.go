@@ -3,6 +3,7 @@ package auth
 import (
 	models "goerp/internal/auth/model"
 	database "goerp/internal/database"
+	"os"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -34,7 +35,9 @@ func Login(c *fiber.Ctx) error {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	// Generate encoded token and send it as response.
-	t, err := token.SignedString([]byte("secret"))
+	jwt_key := os.Getenv("JWT_KEY")
+
+	t, err := token.SignedString([]byte(jwt_key))
 	if err != nil {
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
