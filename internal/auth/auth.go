@@ -9,7 +9,9 @@ import (
 	models "goerp/internal/auth/model"
 	database "goerp/internal/database"
 	bcrypt "goerp/internal/utils"
+	validatorUtil "goerp/internal/utils/validator"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"gorm.io/gorm"
@@ -62,6 +64,12 @@ func Signup(c *fiber.Ctx) error {
 	err := c.BodyParser(user)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "Something's wrong with your input", "data": err})
+	}
+
+	validate := validator.New()
+	err = validate.Struct(user)
+	if err != nil {
+		return c.Status(422).JSON(fiber.Map{"status": "error", "message": "Something's wrong with your input", "data": validatorUtil.ToErrResponse(err).Errors})
 	}
 
 	err = db.Create(&user).Error

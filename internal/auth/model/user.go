@@ -10,9 +10,9 @@ import (
 type User struct {
 	gorm.Model
 	ID       uuid.UUID `gorm:"type:uuid;"`
-	Name     string    `json:"name" binding:"required"`
-	Email    string    `json:"email" binding:"required" gorm:"unique;not null"`
-	Password string    `json:"password" binding:"required"`
+	Name     string    `json:"name" binding:"required" validate:"required,min=3"`
+	Email    string    `json:"email" binding:"required" validate:"required,email" gorm:"unique;not null"`
+	Password string    `json:"password" binding:"required" validate:"required,min=6"`
 }
 
 type Users struct {
