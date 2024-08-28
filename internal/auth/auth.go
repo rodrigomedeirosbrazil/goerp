@@ -2,18 +2,16 @@ package auth
 
 import (
 	"errors"
-	"os"
 	"strings"
-	"time"
 
-	models "goerp/internal/auth/model"
-	database "goerp/internal/database"
-	bcrypt "goerp/internal/utils"
+	model "goerp/internal/auth/model"
+	repository "goerp/internal/auth/repository"
+	bcrypt "goerp/internal/utils/bcrypt"
+	jwt "goerp/internal/utils/jwt"
 	validatorUtil "goerp/internal/utils/validator"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v5"
 	"gorm.io/gorm"
 )
 
@@ -21,10 +19,13 @@ func Login(c *fiber.Ctx) error {
 	emailField := c.FormValue("email")
 	passwordField := c.FormValue("password")
 
-	var user models.User
-	result := database.DB.First(&user, "email = ?", emailField)
+	if (emailField == "") || (passwordField == "") {
+		return c.SendStatus(fiber.StatusUnauthorized)
+	}
 
-	if result.Error != nil {
+	user, err := repository.GetUserByEmail(emailField)
+
+	if err != nil {
 		return c.SendStatus(fiber.StatusUnauthorized)
 	}
 
@@ -36,52 +37,54 @@ func Login(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusUnauthorized)
 	}
 
-	// Create the Claims
-	claims := jwt.MapClaims{
-		"name": user.Name,
-		"exp":  time.Now().Add(time.Hour * 72).Unix(),
-	}
-
-	// Create token
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	// Generate encoded token and send it as response.
-	jwt_key := os.Getenv("JWT_KEY")
-
-	t, err := token.SignedString([]byte(jwt_key))
+	token, err := jwt.CreateToken()
 	if err != nil {
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 
-	return c.JSON(fiber.Map{"token": t})
+	return c.JSON(fiber.Map{"token": token})
 }
 
 func Signup(c *fiber.Ctx) error {
-	db := database.DB
-	user := new(models.User)
+	user := new(model.User)
 
 	// Store the body in the user and return error if encountered
 	err := c.BodyParser(user)
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "Something's wrong with your input", "data": err})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "error", "message": "Something's wrong with your input", "data": err})
 	}
 
 	validate := validator.New()
 	err = validate.Struct(user)
 	if err != nil {
-		return c.Status(422).JSON(fiber.Map{"status": "error", "message": "Something's wrong with your input", "data": validatorUtil.ToErrResponse(err).Errors})
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.
+			Map{
+			"status":  "error",
+			"message": "Something's wrong with your input",
+			"data":    validatorUtil.ToErrResponse(err).Errors,
+		})
 	}
 
-	err = db.Create(&user).Error
+	user, err = repository.CreateUser(user.Name, user.Email, user.Password)
 
 	if err != nil && (errors.Is(err, gorm.ErrDuplicatedKey) || strings.Contains(err.Error(), "UNIQUE constraint failed")) {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "error", "message": "Email in use."})
 	}
 
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "Could not create user", "data": err})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.
+			Map{
+			"status":  "error",
+			"message": "Could not create user",
+			"data":    err,
+		})
 	}
 
 	// Return the created user
-	return c.Status(201).JSON(fiber.Map{"status": "success", "message": "User has created", "data": user})
+	return c.Status(fiber.StatusCreated).JSON(fiber.
+		Map{
+		"status":  "success",
+		"message": "User has created",
+		"data":    user,
+	})
 }

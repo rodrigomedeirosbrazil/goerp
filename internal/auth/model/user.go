@@ -1,7 +1,7 @@
-package models
+package model
 
 import (
-	bcrypt "goerp/internal/utils"
+	bcrypt "goerp/internal/utils/bcrypt"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"

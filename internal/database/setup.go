@@ -1,7 +1,7 @@
-package models
+package model
 
 import (
-	models "goerp/internal/auth/model"
+	model "goerp/internal/auth/model"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -16,7 +16,7 @@ func ConnectDatabase() {
 		panic("failed to connect database")
 	}
 
-	err = database.AutoMigrate(&models.User{})
+	err = database.AutoMigrate(&model.User{})
 	if err != nil {
 		return
 	}
