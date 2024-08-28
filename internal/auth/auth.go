@@ -8,9 +8,8 @@ import (
 	repository "goerp/internal/auth/repository"
 	bcrypt "goerp/internal/utils/bcrypt"
 	jwt "goerp/internal/utils/jwt"
-	validatorUtil "goerp/internal/utils/validator"
+	validator "goerp/internal/utils/validator"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
@@ -54,14 +53,13 @@ func Signup(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "error", "message": "Something's wrong with your input", "data": err})
 	}
 
-	validate := validator.New()
-	err = validate.Struct(user)
+	err = validator.ValidateStruct(user)
 	if err != nil {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.
 			Map{
 			"status":  "error",
 			"message": "Something's wrong with your input",
-			"data":    validatorUtil.ToErrResponse(err).Errors,
+			"data":    validator.ToErrResponse(err).Errors,
 		})
 	}
 
